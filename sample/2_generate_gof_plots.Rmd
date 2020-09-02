@@ -1,0 +1,76 @@
+---
+title: "Generate GOF plots"
+author: "Masato Fukae"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Data handling
+
+Welcome to **generate GOF plots** session!  
+Tutors try to provide accurate code. However, incorrect one may be included. Please use it at your own risk.  
+This document was built by `r R.Version()$version.string`.  
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Set up
+
+Before generate GOF plots, set some libraries.
+
+```{r}
+library(tidyverse)
+path <- "C:/Users/Administrator/Desktop/R-for-PMx"
+```
+
+## Import data
+
+```{r}
+sdtab <- read_table(paste0(path, "/Data/sdtab60"), skip = 1)
+
+head(sdtab)
+```
+
+## Generate GOF plots
+
+```{r}
+p <- ggplot(sdtab %>% filter(DV > 0) %>% filter(DRUG == 1))
+p <- p + geom_point(aes(x = PRED, y = DV), alpha = 0.75, shape = 21)
+p <- p + stat_smooth(aes(x = PRED, y = DV), linetype = "dashed", colour = "red", alpha = 0.5, se = F)
+p <- p + geom_abline(linetype = "dashed")
+p <- p + theme_bw(base_size = 12)
+p <- p + labs(x = "Population prediction", y = "Observed concentration")
+p1 <- p
+
+p <- ggplot(sdtab %>% filter(DV > 0) %>% filter(DRUG == 1))
+p <- p + geom_point(aes(x = IPRED, y = DV), alpha = 0.75, shape = 21)
+p <- p + stat_smooth(aes(x = IPRED, y = DV), linetype = "dashed", colour = "red", alpha = 0.5, se = F)
+p <- p + geom_abline(linetype = "dashed")
+p <- p + theme_bw(base_size = 12)
+p <- p + labs(x = "Individual prediction", y = "Observed concentration")
+p2 <- p
+
+p <- ggplot(sdtab %>% filter(DV > 0) %>% filter(DRUG == 1))
+p <- p + geom_point(aes(x = IPRED, y = IWRES %>% abs()), alpha = 0.75, shape = 21)
+p <- p + stat_smooth(aes(x = IPRED, y = IWRES %>% abs()), linetype = "dashed", colour = "red", alpha = 0.5, se = F)
+p <- p + geom_hline(yintercept = 0, linetype = "dashed")
+p <- p + theme_bw(base_size = 12)
+p <- p + labs(x = "Individual prediction", y = "abs(IWRES)")
+p3 <- p
+
+p <- ggplot(sdtab %>% filter(DV > 0) %>% filter(DRUG == 1))
+p <- p + geom_point(aes(x = TSLD, y = CWRES), alpha = 0.75, shape = 21)
+p <- p + stat_smooth(aes(x = TSLD, y = CWRES), linetype = "dashed", colour = "red", alpha = 0.5, se = F)
+p <- p + geom_hline(yintercept = 0, linetype = "dashed")
+p <- p + theme_bw(base_size = 12)
+p <- p + labs(x = "Time since last dose (hr)", y = "CWRES")
+p4 <- p
+
+p <- gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 2)
+p
+# patchwork
+```
+
+
+#### End of document 

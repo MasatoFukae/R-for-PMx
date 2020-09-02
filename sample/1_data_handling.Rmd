@@ -1,0 +1,110 @@
+---
+title: "Data handling and simple exploratory data analysis"
+author: "Masato Fukae"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Data handling
+
+Welcome to **data handling** session!  
+Tutors try to provide accurate code. However, incorrect one may be included. Please use it at your own risk.  
+This document was built by `r R.Version()$version.string`.  
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Set up
+
+Before handling the dataset, set some libraries.
+
+```{r}
+library(tidyverse)
+path <- "C:/Users/Administrator/Desktop/R-for-PMx"
+```
+
+
+## Import data
+
+Let's import nonmem dataset!
+
+```{r}
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"))
+
+print(head(nm_data))
+
+# print(nrow(nm_data))
+# print(ncol(nm_data))
+# print(names(nm_data))
+
+nm_data %>% nrow() %>% print()
+nm_data %>% ncol() %>% print()
+nm_data %>% names() %>% print()
+```
+
+## Exploratory data analysis
+
+Let's see the dataset by summary statistics and visualization!
+
+### Generate Summary statistics
+
+```{r}
+nm_data %>% group_by(DRUG) %>% filter(CONC > 0) %>% summarise(Nobs = n())
+nm_data %>% group_by(DRUG, PN) %>% filter(CONC > 0) %>% summarise(Nobs = n())
+
+sl_nm_data <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
+
+sl_nm_data %>% head(n = 10) %>% print()
+sl_nm_data %>% tail(n = 10) %>% print()
+sl_nm_data %>% nrow() %>% print()
+sl_nm_data %>% count(PN)
+
+sl_nm_data %>% summarise(Number = n(),
+                         meanCRCL = mean(CRCL),
+                         meanWT = mean(WT),
+                         meanAGE = mean(AGE))
+
+sl_nm_data %>% group_by(PN) %>% summarise(Number = n(),
+                                          meanCRCL = mean(CRCL) %>% round(1),
+                                          meanWT = mean(WT) %>% round(1),
+                                          meanAGE = mean(AGE) %>% round(1)) %>% knitr::kable()
+
+sl_nm_data %>% group_by(PN) %>% summarise(Number = n(),
+                                          meanCRCL = mean(CRCL) %>% round(1),
+                                          meanWT = mean(WT) %>% round(1),
+                                          meanAGE = mean(AGE) %>% round(1),
+                                          sdCRCL = sd(CRCL) %>% round(1),
+                                          sdWT = sd(WT) %>% round(1),
+                                          sdAGE = sd(AGE) %>% round(1)) %>% 
+  mutate(CRCL = paste(meanCRCL, sdCRCL, sep = " ± ")) %>% 
+  mutate(WT = paste(meanWT, sdWT, sep = " ± ")) %>% 
+  mutate(AGE = paste(meanAGE, sdAGE, sep = " ± ")) %>%
+  select(PN, Number, CRCL, WT, AGE) %>% 
+  rename(Protocol_ID = PN) %>% 
+  knitr::kable(align = "c")
+
+```
+
+### Visualize data
+
+```{r}
+p <- ggplot(sl_nm_data %>% select(PN, CRCL, WT, AGE))
+p <- p + geom_point(aes(x = WT, y = CRCL))
+p
+
+p <- p + facet_wrap(~ PN)
+p
+
+p <- ggplot(sl_nm_data %>% select(PN, CRCL, WT, AGE, HLTH))
+p <- p + geom_point(aes(x = WT, y = CRCL, fill = factor(HLTH)), shape = 21, alpha = 0.5)
+p <- p + theme_bw()
+p <- p + labs(x = "Body weight (kg)", y = "Creatine clearance (mL/min)", fill = "Healthy volunteer")
+p <- p + scale_x_continuous(limits = c(25, NA))
+p <- p + scale_y_continuous(limits = c(0, NA))
+p <- p + theme(legend.position = "top")
+p
+
+```
+
+#### End of document
