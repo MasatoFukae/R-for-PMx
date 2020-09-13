@@ -1,6 +1,6 @@
 ---
 title: "Data handling and simple exploratory data analysis"
-author: "Masato Fukae"
+author: "Masato Fukae, Tomohiro Sasaki"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -12,6 +12,10 @@ Tutors try to provide accurate code. However, incorrect one may be included. Ple
 This document was built by `r R.Version()$version.string`.  
 
 ```{r setup, include=FALSE}
+#install.packages("knitr")
+#install.packages("tidyverse")
+#install.packages("dplyr")
+
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -19,9 +23,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Before handling the dataset, set some libraries.
 
-```{r}
+```{r settings}
+
 library(tidyverse)
-path <- "C:/Users/Administrator/Desktop/R-for-PMx"
+path <- "F:/Documents/GitHub/R-for-PMx"
+# default path <- "/cloud/project/R-for-PMx-master"
 ```
 
 
@@ -29,18 +35,22 @@ path <- "C:/Users/Administrator/Desktop/R-for-PMx"
 
 Let's import nonmem dataset!
 
-```{r}
-nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"))
+```{r import_and_check}
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"))  ## csv fileの読み込み
 
-print(head(nm_data))
+print(head(nm_data, 10))    ## 最初の10行の表示                   
 
 # print(nrow(nm_data))
 # print(ncol(nm_data))
 # print(names(nm_data))
 
+#　列数, 行数, 列名の表示
 nm_data %>% nrow() %>% print()
 nm_data %>% ncol() %>% print()
 nm_data %>% names() %>% print()
+
+# スプレッドシートでの表示
+View(nm_data)
 ```
 
 ## Exploratory data analysis
@@ -49,14 +59,16 @@ Let's see the dataset by summary statistics and visualization!
 
 ### Generate Summary statistics
 
-```{r}
+```{r Sum-stats}
+# 薬剤ごとの濃度ポイント数（conc>0）の算出
 nm_data %>% group_by(DRUG) %>% filter(CONC > 0) %>% summarise(Nobs = n())
+# 薬剤ごとの濃度ポイント数（conc>0）の算出
 nm_data %>% group_by(DRUG, PN) %>% filter(CONC > 0) %>% summarise(Nobs = n())
 
+# IDごとに1行のデータを作成
 sl_nm_data <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
 
-sl_nm_data %>% head(n = 10) %>% print()
-sl_nm_data %>% tail(n = 10) %>% print()
+# ID数の表示
 sl_nm_data %>% nrow() %>% print()
 sl_nm_data %>% count(PN)
 
