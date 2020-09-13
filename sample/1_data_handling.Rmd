@@ -60,9 +60,10 @@ Let's see the dataset by summary statistics and visualization!
 ### Generate Summary statistics
 
 ```{r Sum-stats}
+## group_by, filter, summarize, slice, n, count
 # 薬剤ごとの濃度ポイント数（conc>0）の算出
 nm_data %>% group_by(DRUG) %>% filter(CONC > 0) %>% summarise(Nobs = n())
-# 薬剤ごとの濃度ポイント数（conc>0）の算出
+# 薬剤ごと, PN(試験)ごとの濃度ポイント数（conc>0）の算出
 nm_data %>% group_by(DRUG, PN) %>% filter(CONC > 0) %>% summarise(Nobs = n())
 
 # IDごとに1行のデータを作成
@@ -70,6 +71,7 @@ sl_nm_data <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
 
 # ID数の表示
 sl_nm_data %>% nrow() %>% print()
+# PN(試験)ごとのID数の表示
 sl_nm_data %>% count(PN)
 
 sl_nm_data %>% summarise(Number = n(),
