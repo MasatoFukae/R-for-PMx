@@ -20,6 +20,8 @@ library(knitr)
 library(tidyverse)
 library(dplyr)
 
+Sys.setlocale('LC_ALL','C')
+
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -28,8 +30,8 @@ knitr::opts_chunk$set(echo = TRUE)
 Before handling the dataset, set some libraries.
 
 ```{r settings}
-path <- "F:/Documents/GitHub/R-for-PMx"               # enviroment - 1
-path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
+path <- "F:/Desktop/Rpmx/R-for-PMx"               # enviroment - 1
+#path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
 # default path <- "/cloud/project/R-for-PMx-master"
 ```
 
@@ -39,7 +41,12 @@ path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
 Let's import nonmem dataset!
 
 ```{r import_and_check}
-nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"))  ## csv file‚Ì“Ç‚Ýž‚Ý
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv")) ## csv file‚Ì“Ç‚Ýž‚Ý
+
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                    col_types = cols(C     = col_character(),
+                                     TREAT = col_character())
+                    )
 
 print(head(nm_data, 10))    ## Å‰‚Ì10s‚Ì•\Ž¦                   
 
