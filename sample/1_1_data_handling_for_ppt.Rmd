@@ -1,0 +1,226 @@
+---
+title: 'Data handling and EDA: For Presentation'
+author: "Tomohiro Sasaki"
+date: "2020年9月30日"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+## Data handling
+
+Welcome to **data handling** session!  
+Tutors try to provide accurate code. However, incorrect one may be included. Please use it at your own risk.  
+This document was built by `r R.Version()$version.string`.  
+
+```{r setup, include=FALSE}
+#install.packages("knitr")
+#install.packages("tidyverse")
+#install.packages("dplyr")
+
+library(knitr)
+library(tidyverse)
+library(dplyr)
+
+Sys.setlocale('LC_ALL','C')
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Set up
+
+Before handling the dataset, set some libraries.
+
+```{r settings}
+#path <- "F:/Desktop/Rpmx/R-for-PMx"               # enviroment - 1
+path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
+# default path <- "/cloud/project/R-for-PMx-master"
+```
+
+
+## Import data
+
+Let's import nonmem dataset!
+
+```{r import_and_check}
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv")) ## csv fileの読み込み
+
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                    col_types = cols(C     = col_character(),
+                                     TREAT = col_character())
+                    )
+
+print(head(nm_data, 10))    ## 最初の10行の表示                   
+
+# print(nrow(nm_data))
+# print(ncol(nm_data))
+# print(names(nm_data))
+
+#　列数, 行数, 列名の表示
+nm_data %>% nrow() %>% print()
+nm_data %>% ncol() %>% print()
+nm_data %>% names() %>% print()
+
+# スプレッドシートでの表示
+# View(nm_data)
+```
+
+## Exploratory data analysis
+
+Let's see the dataset by summary statistics and visualization!
+
+### Generate Summary statistics
+
+```{r Sum-stats}
+## group_by, filter, summarize, slice, n, count
+# 薬剤ごとの濃度ポイント数（conc>0）の算出
+nm_data %>% group_by(DRUG) %>% filter(CONC > 0) %>% summarise(Nobs = n())
+# 薬剤ごと, PN(試験)ごとの濃度ポイント数（conc>0）の算出
+nm_data %>% group_by(DRUG, PN) %>% filter(CONC > 0) %>% summarise(Nobs = n())
+
+# IDごとに1行のデータを作成
+sl_nm_data <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
+
+# ID数の表示
+sl_nm_data %>% nrow() %>% print()
+# PN(試験)ごとのID数の表示
+sl_nm_data %>% count(PN)
+
+sl_nm_data %>% summarise(Number = n(),
+                         meanCRCL = mean(CRCL),
+                         meanWT = mean(WT),
+                         meanAGE = mean(AGE))
+
+sl_nm_data %>% group_by(PN) %>% summarise(N = n(),
+                                          meanCRCL = mean(CRCL) %>% round(1),
+                                          meanWT = mean(WT) %>% round(1),
+                                          meanAGE = mean(AGE) %>% round(1)) %>% knitr::kable()
+
+sl_nm_data %>% group_by(PN) %>% summarise(Number = n(),
+                                          meanCRCL = mean(CRCL) %>% round(1),
+                                          meanWT = mean(WT) %>% round(1),
+                                          meanAGE = mean(AGE) %>% round(1),
+                                          sdCRCL = sd(CRCL) %>% round(1),
+                                          sdWT = sd(WT) %>% round(1),
+                                          sdAGE = sd(AGE) %>% round(1)) %>% 
+  mutate(CRCL = paste(meanCRCL, sdCRCL, sep = "+/-")) %>% 
+  mutate(WT = paste(meanWT, sdWT, sep = "+/-")) %>% 
+  mutate(AGE = paste(meanAGE, sdAGE, sep = "+/-")) %>%
+  select(PN, Number, CRCL, WT, AGE) %>% 
+  rename(Protocol_ID = PN) %>% 
+  knitr::kable(align = "c")
+
+```
+
+### Visualize data
+
+```{r}
+p <- ggplot(sl_nm_data %>% select(PN, CRCL, WT, AGE))
+p <- p + geom_point(aes(x = WT, y = CRCL))
+p
+
+p <- p + facet_wrap(~ PN)
+p
+
+p <- ggplot(sl_nm_data %>% select(PN, CRCL, WT, AGE, HLTH))
+p <- p + geom_point(aes(x = WT, y = CRCL, fill = factor(HLTH)), shape = 21, alpha = 0.5)
+p <- p + theme_bw()
+p <- p + labs(x = "Body weight (kg)", y = "Creatine clearance (mL/min)", fill = "Healthy volunteer")
+p <- p + scale_x_continuous(limits = c(25, NA))
+p <- p + scale_y_continuous(limits = c(0, NA))
+p <- p + theme(legend.position = "top")
+p
+
+```
+
+### For Presentation
+
+```{r Demo-Stats, eval=FALSE}
+library(flextable)
+
+## Continuous Covariates
+
+nm_stats <- nm_data %>% filter(PN <= 4) %>% group_by(ID) %>% slice(1) %>%
+  mutate_at(c("WT", "AGE", "CRCL", "HT"), ~as.double(gsub(., pattern=-99, replacement = NA))) %>% 
+  group_by(PN) %>% 
+  summarise_at(c("WT", "AGE", "CRCL", "HT"),
+              list(~length(which(!is.na(.))), ~min(., na.rm = TRUE), 
+                   ~max(., na.rm = TRUE), ~mean(., na.rm = TRUE), 
+                   ~sd(., na.rm = TRUE), ~median(., na.rm = TRUE))) %>% 
+  mutate_if(is.double, ~signif(., 3)) %>% 
+  gather(val=Value, key=Key, -PN) %>% 
+  separate(Key, c("Covariate", "Stats"), "_") %>% 
+  spread(key=Stats, value=Value) %>% 
+  mutate(Covariate = factor(Covariate, levels = c("AGE", "WT", "HT", "CRCL"))) %>% 
+  arrange(Covariate, PN) %>%
+  select(Covariate, PN, length, median, min, max) %>% 
+  # group_by(Covariate, PN) %>% 
+  # summarise(N = n,
+  #           `Median[Range]` = paste0(median, " [", min, "-" , max, "]")) %>% 
+  rename(`Protocol No.` = PN,
+         N              = length) %>% 
+  flextable() %>%
+  merge_v(part = "body") %>%
+  merge_h(part = "body") %>%
+  theme_box() %>% 
+  font(fontname="Times New Roman", part = "all") %>%
+  fontsize(size=10, part = "all") %>%
+  align(align = "left", part="all") %>% 
+  width(width = 0.8)
+
+library(officer)
+
+## word export
+doc <- read_docx() %>%
+  
+  body_add_par(value = "EDA Table", style = "heading 2") %>%
+  body_add_flextable(value = nm_stats) %>%
+  
+  print(doc, target = "1_data_handling/Tables.docx")
+
+```
+
+
+```{r PK-profiles, eval=FALSE}
+
+# Mean Linear plot for all trials
+ggplot(data=nm_data, 
+       aes(x=RNTM, y=CONC, group=DOSE, color=factor(DOSE))) + 
+  stat_summary() + stat_summary(geom = "line") + 
+  facet_wrap(~PN)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)")
+
+# Mean Linear plot for selected trials
+ggplot(data=nm_data %>% filter(PN>=8 & PN!=13 | PN <= 2), 
+       aes(x=RNTM, y=CONC, group=DOSE, color=factor(DOSE))) + 
+  stat_summary() + stat_summary(geom = "line") + 
+  facet_wrap(~PN)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)")
+
+ggsave("1_data_handling/EDA_plot.png")
+
+# Mean Semi-log plot for selected trials
+ggplot(data=nm_data %>% filter(PN>=8 & PN!=13 | PN <= 2), 
+       aes(x=RNTM, y=CONC, group=DOSE, color=factor(DOSE))) + 
+  stat_summary() + stat_summary(geom = "line") + 
+  facet_wrap(~PN)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)") +
+  scale_y_log10()
+
+ggsave("1_data_handling/EDA_plot_sLog.png")
+
+# indiv. Mean plot for selected trials
+ggplot(data=nm_data %>% filter(DRUG==2 & PN==19), 
+       aes(x=RNTM, y=CONC)) + 
+  geom_line(aes(group=ID), colour="darkgray") +
+  stat_summary(colour="red") + stat_summary(geom = "line", colour="red") + 
+  facet_grid(PERD~DOSE)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)")
+
+ggsave("1_data_handling/indiv_Mean_plot.png", width=8, height = 6)
+
+```
+
+
+#### End of document
