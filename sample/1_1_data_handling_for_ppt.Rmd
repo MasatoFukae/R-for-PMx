@@ -113,6 +113,59 @@ sl_nm_data %>% group_by(PN) %>% summarise(Number = n(),
 
 ```
 
+```{r Ex-1}
+## Read dataset
+nm_data2 <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                     col_types = cols(C     = col_character(),
+                                      TREAT = col_character() 
+                                      ))
+
+## Number of Subject by PN
+nm_data2 %>% group_by(ID) %>% slice(1) %>% group_by(PN) %>% count() 
+
+## Number of MK7655 Vaid Concentration Record by PN
+nm_data2 %>% filter(MDV == 0 & DRUG == 2) %>% group_by(PN) %>% count() 
+
+## Number of Subject and MK7655 Vaid Concentration Record by PN
+nm_data2 %>% group_by(PN) %>% summarise(N_Sub  = length(unique(ID)),
+                                        N_Conc = length(CONC[MDV == 0 & DRUG == 2])) 
+
+## Desc. Stats. Grouped by PN and Dose
+nm_data2 %>% filter(PN <= 2) %>% group_by(PN, DOSE) %>% summarise(Age_Mean  = mean(AGE),
+                                                                  WT_Mean   = mean(WT),
+                                                                  CRCL_Mean = mean(CRCL))
+
+```
+
+```{r Join-Examples}
+tibA <- tibble(ID   = c(rep(c(1, 2), each=3)),
+               TIME = c(0, 1, 2, 0, 2, 4))
+
+tibB <- tibble(id  = rep(c(1, 2), each=2), 
+               tad = c(0, 1, 0, 3), 
+               PD  = c(100, 90, 100, 70))
+
+tibA %>% left_join(tibB, by=c("ID"="id", "TIME"="tad"))
+tibA %>% right_join(tibB, by=c("ID"="id", "TIME"="tad"))
+tibA %>% inner_join(tibB, by=c("ID"="id", "TIME"="tad"))
+tibA %>% full_join(tibB, by=c("ID"="id", "TIME"="tad"))
+
+tibC <-  tibble(ID   = c(1, 2, 1, 1, 2),
+                TIME = c(0, 0, 0, 2, 2),
+                MDV  = c(0, 1, 1, 0, 0))
+
+tibC %>% arrange(ID, TIME, desc(MDV))
+
+```
+
+```{r Other-Examples}
+nm_data_e <- expand.grid(ID = 1:10, TIME=1:24) %>% as_tibble()
+
+nm_data %>% group_by(ID) %>% slice(1) %>% ungroup() %>% sample_n(1000, replace = TRUE)
+
+```
+
+
 ### Visualize data
 
 ```{r}
