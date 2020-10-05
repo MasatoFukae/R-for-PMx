@@ -163,6 +163,17 @@ nm_data_e <- expand.grid(ID = 1:10, TIME=1:24) %>% as_tibble()
 
 nm_data %>% group_by(ID) %>% slice(1) %>% ungroup() %>% sample_n(1000, replace = TRUE)
 
+mut_dat <-  tibble(ID = 1:3,
+                   HT = c(160, 170, 180),
+                   SEX = c(2, 2, 1))
+
+mut_dat %>% mutate(IBW = 22*(HT/100)^2)
+mut_dat %>% mutate(IBW = ifelse(SEX == 1, 50 + 0.91*(HT-152.4), 45.5 + 0.91*(HT-152.4)))
+
+
+exp_dat <- expand.grid(ID = 1:3,
+                       TIME = 0:2)
+
 ```
 
 
