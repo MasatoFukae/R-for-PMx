@@ -274,7 +274,33 @@ ggsave("sample/1_data_handling/geom_boxplot.png", width=10, height = 8)
 
 ## geom_histogram
 nm_data_b %>% ggplot() + geom_histogram(aes(x=CRCL, fill=factor(PN)), position = "identity", alpha = 0.5, binwidth = 10)
-ggsave("sample/1_data_handling/geom_boxplot.png", width=10, height = 8)
+ggsave("sample/1_data_handling/geom_boxplot_PN.png", width=10, height = 8)
+
+## Data to plot both drug=1&2
+nm_data_p2 <- nm_data %>% filter(PN==19 & MDV==0 & PERD == 1)
+
+## facet_grid
+ggplot(data=nm_data_p2, aes(x=TIME, y=CONC, colour=factor(MALE))) + geom_line(aes(group=ID)) + facet_grid(DRUG~MALE, scales="free") + 
+  xlab("Time after dose(hr)") + ylab("Plasma Concentration (ng/mL)") +
+  scale_x_continuous(breaks = seq(0, 10, by=2)) + 
+  scale_colour_discrete(name = "Sex (0=Female, 1=Male)") +
+  ggtitle("Plasma Concentration Profiles by Sex", subtitle = "Only PN=19 data used") +
+  labs(caption = paste0("Y panel: 1=Imipenem, 2=MK7655, X panel: 0=Female, 1=Male\n",
+                        "Source: ", path, "/Data/PSP4-8-748-s012.csv"
+                        )
+       ) +
+  theme_bw() +
+  theme(axis.text= element_text(size=10),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        legend.key.size = unit(0.3, "cm"),
+        plot.title= element_text(size=15, face="bold"),
+        plot.subtitle = element_text(size=10),
+        plot.caption = element_text(size=8, colour="black", hjust = 1.0),
+        strip.text=element_text(size=10),
+        legend.position = "top")
+
+ggsave("sample/1_data_handling/facet_grid_formatting.png", width=10, height = 8)
 ```
 
 ### For Presentation
