@@ -137,6 +137,19 @@ nm_data2 %>% filter(PN <= 2) %>% group_by(PN, DOSE) %>% summarise(Age_Mean  = me
 
 ```
 
+```{r Ex-2}
+## Read dataset
+nm_data2 <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                     col_types = cols(C     = col_character(),
+                                      TREAT = col_character() 
+                                      ))
+back_info <- read_csv(paste0(path, "/Data/back_info.csv"), na=".")
+
+## Merge dataset & count ID by CYP2D6
+nm_data2 %>% left_join(back_info, by="ID") %>% group_by(ID) %>% slice(1) %>% group_by(CYP2D6) %>% count()
+
+```
+
 ```{r Join-Examples}
 tibA <- tibble(ID   = c(rep(c(1, 2), each=3)),
                TIME = c(0, 1, 2, 0, 2, 4))
@@ -170,12 +183,22 @@ mut_dat <-  tibble(ID = 1:3,
 mut_dat %>% mutate(IBW = 22*(HT/100)^2)
 mut_dat %>% mutate(IBW = ifelse(SEX == 1, 50 + 0.91*(HT-152.4), 45.5 + 0.91*(HT-152.4)))
 
-
 exp_dat <- expand.grid(ID = 1:3,
                        TIME = 0:2)
 
 ```
 
+```{r back_info}
+
+Pheno2D6 <- c(rep(1, 500), rep(2, 350), rep(3, 50), rep(4, 100))
+
+back_info <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
+
+back_info <- back_info %>% select(ID) %>% mutate(CYP2D6 = sample(Pheno2D6, nrow(back_info), replace = TRUE))
+
+write.table(back_info, paste("Data", "/", "back_info.csv", sep=""), sep=",", row.name=F, na=".", quote=F, fileEncoding = "ASCII")
+   
+```
 
 ### Visualize data
 
@@ -196,6 +219,62 @@ p <- p + scale_y_continuous(limits = c(0, NA))
 p <- p + theme(legend.position = "top")
 p
 
+```
+
+```{r ggplot}
+ 
+## Data to plot
+nm_data_p <- nm_data %>% filter(PN==19 & DRUG==2 & MDV==0 & PERD == 1)
+
+## ggplot
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=MALE))
+ggsave("sample/1_data_handling/ggplot.png", width=10, height = 8)
+
+## geom_point
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=MALE)) + geom_point()
+ggsave("sample/1_data_handling/geom_point.png", width=10, height = 8)
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=factor(MALE))) + geom_point()
+ggsave("sample/1_data_handling/geom_point_fMALE.png", width=10, height = 8)
+
+## geom_line
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=factor(MALE))) + geom_line()
+ggsave("sample/1_data_handling/geom_line_fMALE.png", width=10, height = 8)
+
+
+## stat_summary
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + stat_summary()
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + stat_summary(fun=median) + 
+stat_summary(fun=median, geom="line")
+ggsave("sample/1_data_handling/stat_summary.png", width=10, height = 8)
+
+## stat_smooth
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + stat_smooth()
+ggsave("sample/1_data_handling/stat_smooth.png", width=10, height = 8)
+
+## facet_wrap
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + geom_line() + facet_wrap(~ID, scales = "free")
+ggsave("sample/1_data_handling/facet_wrap.png", width=10, height = 8)
+
+## Data to plot both drug=1&2
+nm_data_p2 <- nm_data %>% filter(PN==19 & MDV==0 & PERD == 1)
+
+## facet_grid
+ggplot(data=nm_data_p2, aes(x=TIME, y=CONC, colour=factor(MALE))) + geom_line(aes(group=ID)) + facet_grid(DRUG~MALE, scales="free")
+ggsave("sample/1_data_handling/facet_grid.png", width=10, height = 8)
+
+```
+
+```{r ggplot-2}
+## Data to plot
+nm_data_b <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
+
+## geom_boxplot
+nm_data_b %>% ggplot() + geom_boxplot(aes(x=factor(PN), y=CRCL))
+ggsave("sample/1_data_handling/geom_boxplot.png", width=10, height = 8)
+
+## geom_histogram
+nm_data_b %>% ggplot() + geom_histogram(aes(x=CRCL, fill=factor(PN)), position = "identity", alpha = 0.5, binwidth = 10)
+ggsave("sample/1_data_handling/geom_boxplot.png", width=10, height = 8)
 ```
 
 ### For Presentation
