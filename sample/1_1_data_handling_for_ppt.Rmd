@@ -303,6 +303,55 @@ ggplot(data=nm_data_p2, aes(x=TIME, y=CONC, colour=factor(MALE))) + geom_line(ae
 ggsave("sample/1_data_handling/facet_grid_formatting.png", width=10, height = 8)
 ```
 
+```{r EX-3}
+## Data to plot 
+nm_data_ex3 <- nm_data %>% filter(PN==2 & MDV==0)
+
+## By Drug
+nm_data_ex3 %>% ggplot(aes(x=RNTM, y=CONC)) + geom_line(aes(group=ID), colour="darkgray") + stat_summary(colour="red") +
+  stat_summary(geom="line", colour="red") + facet_wrap(~DRUG, scales = "free")
+
+## BW-CLCR
+nm_data %>% filter(CRCL>0) %>% group_by(ID) %>% slice(1) %>% ggplot(aes(x=WT, y=CRCL)) + geom_point(colour="darkgray") + stat_smooth() + theme_bw()
+
+```
+
+### Additional Topic
+```{r flextable_officer}
+library(flextable)
+
+## Desc. Stats. Grouped by PN and Dose
+nm_flex <- nm_data2 %>% filter(PN <= 2) %>% group_by(PN, DOSE) %>% summarise(Age_Mean  = mean(AGE),
+                                                                  WT_Mean   = mean(WT),
+                                                                  CRCL_Mean = mean(CRCL)) %>% 
+  mutate_if(is.double, ~signif(., 3)) %>% 
+  flextable() %>%
+  merge_v(part = "body") %>%
+  merge_h(part = "body") %>%
+  theme_box() %>% 
+  font(fontname="Times New Roman", part = "all") %>%
+  fontsize(size=10, part = "all") %>%
+  align(align = "left", part="all") %>% 
+  width(width = 0.8)
+
+library(officer)
+
+## word export
+doc <- read_docx() %>%
+  body_add_par(value = "EDA Table", style = "heading 2") %>%
+  body_add_flextable(value = nm_flex) %>%
+  print(target = "1_data_handling/Officer_Table.docx")
+
+## ppt export
+ppt <- read_pptx() %>% 
+  add_slide(layout = "Title and Content") %>%
+  ph_with(value = "EDA Table", location = ph_location_type(type = "title")) %>%
+  ph_with(nm_flex, location = ph_location_type(type = "body")) %>% 
+  print(target = "1_data_handling/Officer_Table.pptx")
+
+```
+
+
 ### For Presentation
 
 ```{r Demo-Stats, eval=FALSE}
