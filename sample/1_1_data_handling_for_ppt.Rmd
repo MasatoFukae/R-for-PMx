@@ -15,9 +15,9 @@ Tutors try to provide accurate code. However, incorrect one may be included. Ple
 This document was built by `r R.Version()$version.string`.  
 
 ```{r setup, include=FALSE}
-#install.packages("knitr")
-#install.packages("tidyverse")
-#install.packages("dplyr")
+install.packages("knitr")
+install.packages("tidyverse")
+install.packages("dplyr")
 
 library(knitr)
 library(tidyverse)
@@ -34,8 +34,9 @@ Before handling the dataset, set some libraries.
 
 ```{r settings}
 #path <- "F:/Desktop/Rpmx/R-for-PMx"               # enviroment - 1
-path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
-# default path <- "/cloud/project/R-for-PMx-master"
+#path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
+
+path <- "/cloud/project" #default
 ```
 
 
