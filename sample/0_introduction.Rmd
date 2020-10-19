@@ -1,65 +1,101 @@
 ---
-title: "Introduction"
-author: "Masato Fukae"
-date: "`r Sys.Date()`"
+title: "演習2 解答例"
+author: "Takahiko AOYAMA"
+date: "2020/10/18"
 output: html_document
 ---
+Text encoding UTF-8
 
-## Introduction of R for Pharmacometrics
+### ベクトル、マトリクス、データフレーム、リスト
 
-Welcome to **R for pharmacometrics**!  
-Tutors try to provide accurate code. However, incorrect one may be included. Please use it at your own risk.  
-This document was built by `r R.Version()$version.string`.  
-
-日本語も利用可能です。あまりおすすめしませんが、利用するならエンコーディングに注意してください。
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## Basic of R
+ベクトル（数値）
 
 ```{r}
-x <- c(2, 4, 6)
-x
-print(x)
-x[2]
-x[2] <- 20
-x
-
-sum(c(2, 4, 6))
-x <- c(2, 4, 6)
-sum(x)
-sumOfX <- sum(x)
-sumOfX
-
+v <- c(1:20)
+v
 ```
 
-## Tidyverse
+ベクトル（文字）
 
 ```{r}
-library(tidyverse)
-x %>% sum(x)
-sumOfX <- x %>% sum()
+v2 <- c("赤", "黄色", "青", "red", "blue")
+v2
+```
+
+ベクトルを列数５のマトリクスに
+
+```{r}
+m <- matrix(v, nrow = 5)
+m
+```
+
+マトリクスの右側に文字ベクトルをくっつける
+
+```{r}
+m2 <- cbind(m, v2)
+m2
+```
+
+数値ベクトルと文字ベクトルをデータフレームに
+
+```{r}
+d <- data.frame(x=c(1,2,3,4,5),
+                y=c("red", "blue", "yellow", "green" , "pinc")
+                )
+View(d)
+```
+
+データフレームの列を参照する
+
+```{r}
+d$x
+```
+
+行列、ベクトル、値をリストにまとめる
+
+```{r}
+L <- list(mat=m, vec=v2, value=999 )
+L
+```
+
+リスト内の要素を参照する
+
+```{r}
+L$mat[2,2]
+```
+
+### 正規分布に従うデータ作成
+
+RのコードはRチャンク内に記載します。  
+Rチャンクとは、下記のグレー部分のことを言います。  
+{}内は、  
+{r チャンクラベル, チャンクオプション}  
+を記載します。小文字のrは必須です。  
+```{r data, eval=T, include=TRUE}
+set.seed(12345) # 乱数のシード
+data <- rnorm(n = 100, mean = 0, sd = 1) # 平均０、標準偏差１の正規分布 
+
+```
+
+### 作成したデータのヒストグラム作成
+
+作成したオブジェクトは、異なるRチャンクでも引き継がれます。  
+Rチャンクの挿入は、ctrl + Alt + iで可能です。
+
+```{r}
+
+hist(data)
+
+```
+
+チャンクオプション `echo=FALSE` で、Rチャンクはドキュメントに表示させず、実行結果だけを表示できます。
+
+
+
+
+```{r histgram 2, echo=FALSE}
+hist(data)
 ```
 
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
