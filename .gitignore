@@ -4,3 +4,4 @@ sample/.Rhistory
 .Rhistory
 .Rproj.user
 project.Rproj
+*.tmp
