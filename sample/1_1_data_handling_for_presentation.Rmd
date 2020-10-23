@@ -1,0 +1,651 @@
+---
+title: 'Data handling and EDA: For Presentation'
+author: "Tomohiro Sasaki"
+date: "2020年9月30日"
+output: 
+  html_notebook:
+    toc: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+# install.packages("knitr")
+# install.packages("tidyverse")
+# install.packages("dplyr")
+
+library(knitr)
+library(tidyverse)
+library(dplyr)
+library(flextable)
+library(png)
+Sys.setlocale('LC_ALL','C')
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+
+#path <- "/cloud/project" #default
+#path <- "F:/Desktop/Rpmx/R-for-PMx"               # enviroment - 1
+path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
+```
+
+# Exploratory Data Analysis (EDA)
+このセクションでは母集団薬物動態解析時のExploratory Data Analysis （EDA：探索的データ解析）について，
+Rのコーディング技術を学びながら，習得していきます。
+
+\pagebreak
+
+## Contents
+  - [Exploratory Data Analysis (EDA) とは](#EDA)
+  - [Data Handling <“dplyr”>](#DHL)
+    - 必要なスキルの説明-1：[データの読み込み](#DREAD)，[表示，計測](#DSHOW)，抜き出し，要約
+    - 演習-1
+    - 必要なスキルの説明-2：データの結合，並び替え，整形
+    - 演習-2
+  - Data Visualization <“ggplot2”>
+    - 必要なスキルの説明-3：基本設定，要約・分割，箱ひげ図，ヒストグラム，Formatting
+    - 演習-3
+    - 便利な機能
+    
+本日の概要になります。EDAとは何かを簡単に例を示しながら説明した後，主に二つのスキルについて，
+学んでいきます。
+1つ目はData Handling，二つ目はData Visualizationになります。
+それぞれで必要なR coding スキルを説明した後，簡単な演習を行って頂きます。
+演習はtotalで3つ予定していますが，時間の都合上1つは省略するかもしれません。
+
+\pagebreak
+
+## Exploratory Data Analysis (EDA) {#EDA}
+  - 解析の前にデータの概要/傾向を把握する（可視化による一時分析）
+    - 解析対象となる変数の平均推移の形，個別推移の形，外れ値/異常値の有無，PK/PDの相関確認
+    - 共変量の分布，相関，外れ値/異常値の有無
+  
+  - 解析データセットに対して，以下を行う
+    - 興味の対象ごとの要約統計量の算出（N, mean, median, min, maxなど）
+    - 探索的なグラフ作成
+    
+まず，EDAについて，その概要を説明いたします。
+EDAの大きな目的は解析の前にデータの概要/傾向を把握する事です。
+最近発出された曝露反応解析のガイドラインでは可視化による一時分析とも呼ばれています
+ので，これ自体（つまりデータの概要/傾向を把握する事）が一つの解析とも言えるもしれません。
+具体的には解析対象となる変数（例えば血中濃度，薬効指標）に対しては，
+解析対象となる変数の平均推移の形，個別推移の形，外れ値/異常値の有無，PK/PDの相関確認 などが確認する内容になります。
+また，共変量については，その分布，相関，外れ値/異常値の有無を確認することになります。
+共変量については，本日の3セクション目でも演習いたします。
+これらを行うためには，解析データセットを用いて，興味の対象ごとの要約統計量を算出したり，
+見たいグラフを作成出来るようになる必要があります。
+このセクションではこれらが自在に出来るようになれるように演習を行います。
+
+\pagebreak
+
+### EDA Example
+次にEDAの具体的な例を見ていきます。
+こちらでは連続共変量（年齢，体重，身長，クレアチニンクリアランス）について，
+試験ごとの要約統計量をまとめています。
+
+```{r EDA_Example_1}
+nm_data_ex <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                    col_types = cols(C     = col_character(),
+                                     TREAT = col_character())
+                    )
+nm_stats <- nm_data_ex %>% filter(PN <= 4) %>% group_by(ID) %>% slice(1) %>%
+  mutate_at(c("WT", "AGE", "CRCL", "HT"), ~as.double(gsub(., pattern=-99, replacement = NA))) %>% 
+  group_by(PN) %>% 
+  summarise_at(c("WT", "AGE", "CRCL", "HT"),
+              list(~length(which(!is.na(.))), ~min(., na.rm = TRUE), 
+                   ~max(., na.rm = TRUE), ~mean(., na.rm = TRUE), 
+                   ~sd(., na.rm = TRUE), ~median(., na.rm = TRUE))) %>% 
+  mutate_if(is.double, ~signif(., 3)) %>% 
+  gather(val=Value, key=Key, -PN) %>% 
+  separate(Key, c("Covariate", "Stats"), "_") %>% 
+  spread(key=Stats, value=Value) %>% 
+  mutate(Covariate = factor(Covariate, levels = c("AGE", "WT", "HT", "CRCL"))) %>% 
+  arrange(Covariate, PN) %>%
+  select(Covariate, PN, length, median, min, max) %>% 
+  # group_by(Covariate, PN) %>% 
+  # summarise(N = n,
+  #           `Median[Range]` = paste0(median, " [", min, "-" , max, "]")) %>% 
+  rename(`Protocol No.` = PN,
+         N              = length) %>% 
+  flextable() %>%
+  merge_v(part = "body") %>%
+  merge_h(part = "body") %>%
+  theme_box() %>% 
+  font(fontname="Times New Roman", part = "all") %>%
+  fontsize(size=10, part = "all") %>%
+  align(align = "left", part="all") 
+
+nm_stats
+```
+この表を見てみると，以下の2点に気づくかと思います。
+
+  - Study No=3, 4では身長が入っていない
+  - Study No=3, 4で異常に高いCRCLが存在する
+
+すると，解析をする前にこれらに対して，どう対処するか検討する必要があることに気づきます。
+
+次の例は図を作成する例になります。
+
+```{r EDA_Example_2}
+# indiv. Mean plot for selected trials
+ggplot(data=nm_data_ex %>% filter(DRUG==2 & PN==19), 
+       aes(x=RNTM, y=CONC)) + 
+  geom_line(aes(group=ID), colour="darkgray") +
+  stat_summary(colour="red") + stat_summary(geom = "line", colour="red") + 
+  facet_grid(PERD~DOSE)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)")
+
+ggsave("1_data_handling/indiv_Mean_plot.png", width=8, height = 6)
+```
+この図では用量ごと，投与期ごとの平均の血中濃度推移を個別の濃度推移を併せて，
+示しています。
+吸収相に着目すると，この化合物は最初の測定点でCmaxになっており，吸収が比較的早く，
+複雑な吸収モデルは必要なさそうに見えます。
+一方で，2期目で2例にsecondary peakが認められることに気づきます。
+すると，この化合物の特性（例えば難溶性で，食事による吸収性が上がる）や試験デザインによる影響を考えると共に，
+サンプルの取り違えなど，何かエラーがないか考えることになると思います。
+さらに，軸を対数軸とすることで，どのようなコンパートメントモデルがデータに合いそうかヒントを得ることも出来きます。
+```{r EDA_Example_3}
+# indiv. Mean plot for selected trials
+ggplot(data=nm_data_ex %>% filter(DRUG==2 & PN==19), 
+       aes(x=RNTM, y=CONC)) + 
+  geom_line(aes(group=ID), colour="darkgray") +
+  stat_summary(colour="red") + stat_summary(geom = "line", colour="red") + 
+  facet_grid(PERD~DOSE)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)") %>% 
+  scale_y_log10()
+
+ggsave("1_data_handling/indiv_Mean_plot_log.png", width=8, height = 6)
+```
+
+\pagebreak
+
+## Data Handling {#DHL}
+では，まずはデータハンドリングについて，Rのコーディングスキルを示しながら，学んでいきます。
+データハンドリングでは
+
+  - データの読み込み，整形，集計を行い，目的とする出力を作成する
+  - グラフ作成の前処理としても必要なことが多い
+
+です。
+このデータハンドリングでは，主に二つのR package (“readr”, “dplyr”)を用います。
+なお先ほどのセッションでもありましたが，R studioのcheatsheet（Data Import Cheatsheet, Data Transformation Cheatsheet）が非常に分かりやすいです。
+
+https://rstudio.com/resources/cheatsheets/
+
+\pagebreak
+
+### データの読み込み, read_csv, read_table, paste, paste0 {#DREAD}
+
+データの読み込み
+
+  - read_csv, read_table: csv (コンマ区切り), txt形式（スペース or tab区切り）のファイルを読み込む
+    - 自動でデータの型（double, character..等）を特定するが，うまく認識してくれないケースがある
+
+文字列の結合
+
+  - paste0: 文字列を結合する際に間に何も入れない
+  - paste: 文字列を結合する際に間にスペースを入れる（default, 変更可能）
+
+まずはpaste0で
+```{r data-import-ex1}
+#paste0で結合した文字列で指定したファイルをcsv形式で読み込みnm_data_ex1として格納
+nm_data_ex1 <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv")) 
+```
+
+```{r data-import-ex2}
+# paste0で結合した文字列のファイルをcsv形式で読み込みnm_data_ex2として格納
+# na=“.”: .(ピリオド)の値をNAとみなす⇒誤ってcharacterと認識されることを避ける
+# col_typeで特定の行の型を指定する
+nm_data_ex2 <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                    col_types = cols(C     = col_character(),
+                                     TREAT = col_character())
+                    )
+```
+
+データの型指定の例：
+
+  - col_character(): 文字列
+  - col_integer(): 整数
+  - col_double(): 実数
+  - col_logical(): TRUE or FALSE
+  - col_date(format = ""): 日付
+  - col_time(format = ""): 時間
+  - col_datetime(format = ""): 日付
+  - col_guess(): 推測する
+  - col_skip(): 列を読まない
+  
+```{r data-import-ex3}
+# paste0で結合した文字列のファイルをtxt形式で読み込みnm_dataとして格納
+# skip=1で最初の1行目を読み飛ばす
+nm_data_ex3 <- read_table(paste0(path, "/Data/sdtab60"), na=".", skip=1)
+```
+
+\pagebreak
+
+### データの表示，head, View, names, count, n, nrow, ncol {#DSHOW}
+
+データの表示
+
+  - head: データの最初の5行（default）を表示
+
+```{r head-Ex}
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                    col_types = cols(C     = col_character(),
+                                     TREAT = col_character())
+                    )
+# nm_dataの最初の10行を表示
+head(nm_data, 10)
+```
+  
+  - View: データをスプレッドシートとして表示
+
+```{r view-Ex}
+# nm_dataをスプレッドシートとして表示
+View(nm_data)
+```
+ 
+  - names: データの列名を表示
+
+```{r names-Ex}
+names(nm_data)
+```
+
+データの計測
+
+  - count, n, nrow: データの行数を計測，countでは()内の変数でグループ化して計測する
+
+```{r show-f1, echo=FALSE, warning=FALSE}
+# read img file
+img <- readPNG("1_data_handling/f1.png")
+# plot img
+par(oma=c(0, 0, 0, 0))
+par(mar=c(0, 0, 0, 0))
+par(plt=c(0, 1, 0, 1))
+plot(1:5, type='n', axes=FALSE, xlab="", ylab="")
+rasterImage(img, 1.0, 1.0, 4.0, 5.0)
+
+```
+
+
+```{r count-EX}
+# nm_dataの行数をPNごとに計測
+nm_data %>% count(PN)
+```
+
+
+```{r Sum-stats}
+
+nm_data <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                    col_types = cols(C     = col_character(),
+                                     TREAT = col_character())
+                    )
+
+## group_by, filter, summarize, slice, n, count
+# 薬剤ごとの濃度ポイント数（conc>0）の算出
+nm_data %>% group_by(DRUG) %>% filter(CONC > 0) %>% summarise(Nobs = n())
+# 薬剤ごと, PN(試験)ごとの濃度ポイント数（conc>0）の算出
+nm_data %>% group_by(DRUG, PN) %>% filter(CONC > 0) %>% summarise(Nobs = n())
+
+# IDごとに1行のデータを作成
+sl_nm_data <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
+
+# ID数の表示
+sl_nm_data %>% nrow() %>% print()
+# PN(試験)ごとのID数の表示
+sl_nm_data %>% count(PN)
+
+sl_nm_data %>% summarise(Number = n(),
+                         meanCRCL = mean(CRCL),
+                         meanWT = mean(WT),
+                         meanAGE = mean(AGE))
+
+sl_nm_data %>% group_by(PN) %>% summarise(N = n(),
+                                          meanCRCL = mean(CRCL) %>% round(1),
+                                          meanWT = mean(WT) %>% round(1),
+                                          meanAGE = mean(AGE) %>% round(1)) %>% knitr::kable()
+
+sl_nm_data %>% group_by(PN) %>% summarise(Number = n(),
+                                          meanCRCL = mean(CRCL) %>% round(1),
+                                          meanWT = mean(WT) %>% round(1),
+                                          meanAGE = mean(AGE) %>% round(1),
+                                          sdCRCL = sd(CRCL) %>% round(1),
+                                          sdWT = sd(WT) %>% round(1),
+                                          sdAGE = sd(AGE) %>% round(1)) %>% 
+  mutate(CRCL = paste(meanCRCL, sdCRCL, sep = "+/-")) %>% 
+  mutate(WT = paste(meanWT, sdWT, sep = "+/-")) %>% 
+  mutate(AGE = paste(meanAGE, sdAGE, sep = "+/-")) %>%
+  select(PN, Number, CRCL, WT, AGE) %>% 
+  rename(Protocol_ID = PN) %>% 
+  knitr::kable(align = "c")
+
+```
+
+```{r Ex-1}
+## Read dataset
+nm_data2 <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                     col_types = cols(C     = col_character(),
+                                      TREAT = col_character() 
+                                      ))
+
+## Number of Subject by PN
+nm_data2 %>% group_by(ID) %>% slice(1) %>% group_by(PN) %>% count() 
+
+## Number of MK7655 Vaid Concentration Record by PN
+nm_data2 %>% filter(MDV == 0 & DRUG == 2) %>% group_by(PN) %>% count() 
+
+## Number of Subject and MK7655 Vaid Concentration Record by PN
+nm_data2 %>% group_by(PN) %>% summarise(N_Sub  = length(unique(ID)),
+                                        N_Conc = length(CONC[MDV == 0 & DRUG == 2])) 
+
+## Desc. Stats. Grouped by PN and Dose
+nm_data2 %>% filter(PN <= 2) %>% group_by(PN, DOSE) %>% summarise(Age_Mean  = mean(AGE),
+                                                                  WT_Mean   = mean(WT),
+                                                                  CRCL_Mean = mean(CRCL))
+
+```
+
+```{r Ex-2}
+## Read dataset
+nm_data2 <- read_csv(paste0(path, "/Data/PSP4-8-748-s012.csv"), na=".",
+                     col_types = cols(C     = col_character(),
+                                      TREAT = col_character() 
+                                      ))
+back_info <- read_csv(paste0(path, "/Data/back_info.csv"), na=".")
+
+## Merge dataset & count ID by CYP2D6
+nm_data2 %>% left_join(back_info, by="ID") %>% group_by(ID) %>% slice(1) %>% group_by(CYP2D6) %>% count()
+
+```
+
+```{r Join-Examples}
+tibA <- tibble(ID   = c(rep(c(1, 2), each=3)),
+               TIME = c(0, 1, 2, 0, 2, 4))
+
+tibB <- tibble(id  = rep(c(1, 2), each=2), 
+               tad = c(0, 1, 0, 3), 
+               PD  = c(100, 90, 100, 70))
+
+tibA %>% left_join(tibB, by=c("ID"="id", "TIME"="tad"))
+tibA %>% right_join(tibB, by=c("ID"="id", "TIME"="tad"))
+tibA %>% inner_join(tibB, by=c("ID"="id", "TIME"="tad"))
+tibA %>% full_join(tibB, by=c("ID"="id", "TIME"="tad"))
+
+tibC <-  tibble(ID   = c(1, 2, 1, 1, 2),
+                TIME = c(0, 0, 0, 2, 2),
+                MDV  = c(0, 1, 1, 0, 0))
+
+tibC %>% arrange(ID, TIME, desc(MDV))
+
+```
+
+```{r Other-Examples}
+nm_data_e <- expand.grid(ID = 1:10, TIME=1:24) %>% as_tibble()
+
+nm_data %>% group_by(ID) %>% slice(1) %>% ungroup() %>% sample_n(1000, replace = TRUE)
+
+mut_dat <-  tibble(ID = 1:3,
+                   HT = c(160, 170, 180),
+                   SEX = c(2, 2, 1))
+
+mut_dat %>% mutate(IBW = 22*(HT/100)^2)
+mut_dat %>% mutate(IBW = ifelse(SEX == 1, 50 + 0.91*(HT-152.4), 45.5 + 0.91*(HT-152.4)))
+
+exp_dat <- expand.grid(ID = 1:3,
+                       TIME = 0:2)
+
+```
+
+```{r back_info}
+
+Pheno2D6 <- c(rep(1, 500), rep(2, 350), rep(3, 50), rep(4, 100))
+
+back_info <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
+
+back_info <- back_info %>% select(ID) %>% mutate(CYP2D6 = sample(Pheno2D6, nrow(back_info), replace = TRUE))
+
+write.table(back_info, paste("1_data_handling", "/", "back_info.csv", sep=""), sep=",", row.name=F, na=".", quote=F, fileEncoding = "ASCII")
+   
+```
+
+### Visualize data
+
+```{r}
+p <- ggplot(sl_nm_data %>% select(PN, CRCL, WT, AGE))
+p <- p + geom_point(aes(x = WT, y = CRCL))
+p
+
+p <- p + facet_wrap(~ PN)
+p
+
+p <- ggplot(sl_nm_data %>% select(PN, CRCL, WT, AGE, HLTH))
+p <- p + geom_point(aes(x = WT, y = CRCL, fill = factor(HLTH)), shape = 21, alpha = 0.5)
+p <- p + theme_bw()
+p <- p + labs(x = "Body weight (kg)", y = "Creatine clearance (mL/min)", fill = "Healthy volunteer")
+p <- p + scale_x_continuous(limits = c(25, NA))
+p <- p + scale_y_continuous(limits = c(0, NA))
+p <- p + theme(legend.position = "top")
+p
+
+```
+
+```{r ggplot}
+ 
+## Data to plot
+nm_data_p <- nm_data %>% filter(PN==19 & DRUG==2 & MDV==0 & PERD == 1)
+
+## ggplot
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=MALE))
+ggsave("1_data_handling/ggplot.png", width=10, height = 8)
+
+## geom_point
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=MALE)) + geom_point()
+ggsave("1_data_handling/geom_point.png", width=10, height = 8)
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=factor(MALE))) + geom_point()
+ggsave("1_data_handling/geom_point_fMALE.png", width=10, height = 8)
+
+## geom_line
+nm_data_p  %>% ggplot(aes(x=TIME, y=CONC, group=ID, colour=factor(MALE))) + geom_line()
+ggsave("1_data_handling/geom_line_fMALE.png", width=10, height = 8)
+
+
+## stat_summary
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + stat_summary()
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + stat_summary(fun=median) + 
+stat_summary(fun=median, geom="line")
+ggsave("1_data_handling/stat_summary.png", width=10, height = 8)
+
+## stat_smooth
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + stat_smooth()
+ggsave("1_data_handling/stat_smooth.png", width=10, height = 8)
+
+## facet_wrap
+ggplot(data=nm_data_p, aes(x=TIME, y=CONC, colour=factor(MALE))) + geom_line() + facet_wrap(~ID, scales = "free")
+ggsave("1_data_handling/facet_wrap.png", width=10, height = 8)
+
+## Data to plot both drug=1&2
+nm_data_p2 <- nm_data %>% filter(PN==19 & MDV==0 & PERD == 1)
+
+## facet_grid
+ggplot(data=nm_data_p2, aes(x=TIME, y=CONC, colour=factor(MALE))) + geom_line(aes(group=ID)) + facet_grid(DRUG~MALE, scales="free")
+ggsave("1_data_handling/facet_grid.png", width=10, height = 8)
+
+```
+
+```{r ggplot-2}
+## Data to plot
+nm_data_b <- nm_data %>% group_by(ID) %>% slice(1) %>% ungroup()
+
+## geom_boxplot
+nm_data_b %>% ggplot() + geom_boxplot(aes(x=factor(PN), y=CRCL))
+ggsave("1_data_handling/geom_boxplot.png", width=10, height = 8)
+
+## geom_histogram
+nm_data_b %>% ggplot() + geom_histogram(aes(x=CRCL, fill=factor(PN)), position = "identity", alpha = 0.5, binwidth = 10)
+ggsave("1_data_handling/geom_boxplot_PN.png", width=10, height = 8)
+
+## Data to plot both drug=1&2
+nm_data_p2 <- nm_data %>% filter(PN==19 & MDV==0 & PERD == 1)
+
+## facet_grid
+ggplot(data=nm_data_p2, aes(x=TIME, y=CONC, colour=factor(MALE))) + geom_line(aes(group=ID)) + facet_grid(DRUG~MALE, scales="free") + 
+  xlab("Time after dose(hr)") + ylab("Plasma Concentration (ng/mL)") +
+  scale_x_continuous(breaks = seq(0, 10, by=2)) + 
+  scale_colour_discrete(name = "Sex (0=Female, 1=Male)") +
+  ggtitle("Plasma Concentration Profiles by Sex", subtitle = "Only PN=19 data used") +
+  labs(caption = paste0("Y panel: 1=Imipenem, 2=MK7655, X panel: 0=Female, 1=Male\n",
+                        "Source: ", path, "/Data/PSP4-8-748-s012.csv"
+                        )
+       ) +
+  theme_bw() +
+  theme(axis.text= element_text(size=10),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        legend.key.size = unit(0.3, "cm"),
+        plot.title= element_text(size=15, face="bold"),
+        plot.subtitle = element_text(size=10),
+        plot.caption = element_text(size=8, colour="black", hjust = 1.0),
+        strip.text=element_text(size=10),
+        legend.position = "top")
+
+ggsave("1_data_handling/facet_grid_formatting.png", width=10, height = 8)
+```
+
+```{r EX-3}
+## Data to plot 
+nm_data_ex3 <- nm_data %>% filter(PN==2 & MDV==0)
+
+## By Drug
+nm_data_ex3 %>% ggplot(aes(x=RNTM, y=CONC)) + geom_line(aes(group=ID), colour="darkgray") + stat_summary(colour="red") +
+  stat_summary(geom="line", colour="red") + facet_wrap(~DRUG, scales = "free")
+
+## BW-CLCR
+nm_data %>% filter(CRCL>0) %>% group_by(ID) %>% slice(1) %>% ggplot(aes(x=WT, y=CRCL)) + geom_point(colour="darkgray") + stat_smooth() + theme_bw()
+
+```
+
+### Additional Topic
+```{r flextable_officer}
+library(flextable)
+
+## Desc. Stats. Grouped by PN and Dose
+nm_flex <- nm_data2 %>% filter(PN <= 2) %>% group_by(PN, DOSE) %>% summarise(Age_Mean  = mean(AGE),
+                                                                  WT_Mean   = mean(WT),
+                                                                  CRCL_Mean = mean(CRCL)) %>% 
+  mutate_if(is.double, ~signif(., 3)) %>% 
+  flextable() %>%
+  merge_v(part = "body") %>%
+  merge_h(part = "body") %>%
+  theme_box() %>% 
+  font(fontname="Times New Roman", part = "all") %>%
+  fontsize(size=10, part = "all") %>%
+  align(align = "left", part="all") %>% 
+  width(width = 0.8)
+
+library(officer)
+
+## word export
+doc <- read_docx() %>%
+  body_add_par(value = "EDA Table", style = "heading 2") %>%
+  body_add_flextable(value = nm_flex) %>%
+  print(target = "1_data_handling/Officer_Table.docx")
+
+## ppt export
+ppt <- read_pptx() %>% 
+  add_slide(layout = "Title and Content") %>%
+  ph_with(value = "EDA Table", location = ph_location_type(type = "title")) %>%
+  ph_with(nm_flex, location = ph_location_type(type = "body")) %>% 
+  print(target = "1_data_handling/Officer_Table.pptx")
+
+```
+
+
+### For Presentation
+
+```{r Demo-Stats, eval=FALSE}
+library(flextable)
+
+## Continuous Covariates
+
+nm_stats <- nm_data %>% filter(PN <= 4) %>% group_by(ID) %>% slice(1) %>%
+  mutate_at(c("WT", "AGE", "CRCL", "HT"), ~as.double(gsub(., pattern=-99, replacement = NA))) %>% 
+  group_by(PN) %>% 
+  summarise_at(c("WT", "AGE", "CRCL", "HT"),
+              list(~length(which(!is.na(.))), ~min(., na.rm = TRUE), 
+                   ~max(., na.rm = TRUE), ~mean(., na.rm = TRUE), 
+                   ~sd(., na.rm = TRUE), ~median(., na.rm = TRUE))) %>% 
+  mutate_if(is.double, ~signif(., 3)) %>% 
+  gather(val=Value, key=Key, -PN) %>% 
+  separate(Key, c("Covariate", "Stats"), "_") %>% 
+  spread(key=Stats, value=Value) %>% 
+  mutate(Covariate = factor(Covariate, levels = c("AGE", "WT", "HT", "CRCL"))) %>% 
+  arrange(Covariate, PN) %>%
+  select(Covariate, PN, length, median, min, max) %>% 
+  # group_by(Covariate, PN) %>% 
+  # summarise(N = n,
+  #           `Median[Range]` = paste0(median, " [", min, "-" , max, "]")) %>% 
+  rename(`Protocol No.` = PN,
+         N              = length) %>% 
+  flextable() %>%
+  merge_v(part = "body") %>%
+  merge_h(part = "body") %>%
+  theme_box() %>% 
+  font(fontname="Times New Roman", part = "all") %>%
+  fontsize(size=10, part = "all") %>%
+  align(align = "left", part="all") %>% 
+  width(width = 0.8)
+
+library(officer)
+
+## word export
+doc <- read_docx() %>%
+  
+  body_add_par(value = "EDA Table", style = "heading 2") %>%
+  body_add_flextable(value = nm_stats) %>%
+  
+  print(doc, target = "1_data_handling/Tables.docx")
+
+```
+
+
+```{r PK-profiles, eval=FALSE}
+
+# Mean Linear plot for all trials
+ggplot(data=nm_data, 
+       aes(x=RNTM, y=CONC, group=DOSE, color=factor(DOSE))) + 
+  stat_summary() + stat_summary(geom = "line") + 
+  facet_wrap(~PN)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)")
+
+# Mean Linear plot for selected trials
+ggplot(data=nm_data %>% filter(PN>=8 & PN!=13 | PN <= 2), 
+       aes(x=RNTM, y=CONC, group=DOSE, color=factor(DOSE))) + 
+  stat_summary() + stat_summary(geom = "line") + 
+  facet_wrap(~PN)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)")
+
+ggsave("1_data_handling/EDA_plot.png")
+
+# Mean Semi-log plot for selected trials
+ggplot(data=nm_data %>% filter(PN>=8 & PN!=13 | PN <= 2), 
+       aes(x=RNTM, y=CONC, group=DOSE, color=factor(DOSE))) + 
+  stat_summary() + stat_summary(geom = "line") + 
+  facet_wrap(~PN)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)") +
+  scale_y_log10()
+
+ggsave("1_data_handling/EDA_plot_sLog.png")
+
+# indiv. Mean plot for selected trials
+ggplot(data=nm_data %>% filter(DRUG==2 & PN==19), 
+       aes(x=RNTM, y=CONC)) + 
+  geom_line(aes(group=ID), colour="darkgray") +
+  stat_summary(colour="red") + stat_summary(geom = "line", colour="red") + 
+  facet_grid(PERD~DOSE)  + scale_colour_discrete(name="Dose (mg)") + 
+  xlab("Time after dose(hr)") + ylab("Plasma concentration (ng/mL)")
+
+ggsave("1_data_handling/indiv_Mean_plot.png", width=8, height = 6)
+
+```
+
+
+#### End of document
