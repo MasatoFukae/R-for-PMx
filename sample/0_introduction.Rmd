@@ -1,5 +1,5 @@
 ---
-title: "演習2 解答例"
+title: "Introduction"
 author: "Takahiko AOYAMA"
 date: "2020/10/18"
 output: html_document
