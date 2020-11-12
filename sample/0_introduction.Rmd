@@ -1,7 +1,7 @@
 ---
 title: "Introduction"
 author: "Takahiko AOYAMA"
-date: "2020/10/18"
+date: "2020/11/12"
 output: html_document
 ---
 Text encoding UTF-8
@@ -84,7 +84,7 @@ Rチャンクとは、下記のグレー部分のことを言います。
 を記載します。小文字のrは必須です。  
 ```{r data, eval=T, include=TRUE}
 set.seed(12345) # 乱数のシード
-data <- rnorm(n = 100, mean = 0, sd = 1) # 平均０、標準偏差１の正規分布 
+data <- rnorm(n = 100, mean = 0, sd = 1) # 平均０、標準偏差１の正規分布に従う100個の乱数列を発生 
 
 ```
 
