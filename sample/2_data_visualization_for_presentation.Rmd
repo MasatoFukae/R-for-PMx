@@ -19,19 +19,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Data visualization
 ## Contents
-  - Goodness-of-fit (GOF) プロット
+  - [Goodness-of-fit (GOF) プロット](#sec01)
     - 必要な関数の説明
     - 演習-1
-  - 視覚的共変量探索
+  - [視覚的共変量探索](#sec02)
     - 共変量候補の相関関係
       - 必要な関数・パッケージの説明
       - 演習-2
     - ETA（変量効果）と共変量の関係
       - 演習-3
 
-## Goodness-of-fit (GOF) プロット
+## Goodness-of-fit (GOF) プロット {#sec01}
 ### GOFプロットとは？
- - 母集団解析で構築したモデルの診断プロットの1つ
+ - 母集団解析で構築したモデルの診断プロット
    - 実測値（DV） vs 母集団予測値（PRED）
    - 実測値（DV） vs 個別予測値（IPRED）
    - 条件付き重み付き残差（CWRES） vs PRED
@@ -39,11 +39,11 @@ knitr::opts_chunk$set(echo = TRUE)
    - 個別重み付き残差の絶対値（|IWRES|） vs IPRED などがあります。
 
 ### GOFプロットの作成手順
-NONMEMで母集団薬物動態解析を実行時に出力したsdtabファイル中の変数を使用して、GOFプロットを作成します。
-今回は、前セクションで学んだRコーディング技術を使用してGOFプロットを作成していただきます。
+1. NONMEMで母集団薬物動態解析を実行し、出力した**sdtab**ファイルを読み込む
+2. **sdtab**ファイルから必要な変数を抜き出し、GOFプロットを作成する。
 
-NONMEMでのsdtabファイルの出力方法等については詳細を割愛させていただきますが、以下に示すようなファイルです。
-演習-1ではsdtabファイルから必要なデータを抜き出し、GOFプロットを作成していただきます。
+本コースではNONMEMを用いた解析は行わないため、こちらから提供するsdtabファイルを用いてGOFプロットを作成していただきます。
+**sdtab**ファイル中には以下の変数が含まれています。（一部省略）
 
 #### sdtab
 ```{r example_sdtab}
@@ -94,11 +94,11 @@ grid.arrange(p1, p2, p3, p4, nrow = 2)
 演習-1で必要なRコーディング技術について説明いたします。
 前セクションの内容と重複する部分もあります。
 
- - geom_point: 散布図を作成する
-   - 例：p <- ggplot(data = sdtab, aes(y=DV, x=PRED)) + geom_point(size=1, alpha=0.8, shape=21)
-   - size：点の大きさ
-   - alpha：点の透過性（0<α≤1）、0に近いほど透明、1に近いほど不透明となります。
-   - shape：点の形（0～25）、お勧めはshape=21「○」
+ - **geom_point**: 散布図を作成する
+   - 例：**p <- ggplot(data = sdtab, aes(y=DV, x=PRED)) + geom_point(size=1, alpha=0.8, shape=21)**
+   - **size**：点の大きさ
+   - **alpha**：点の透過性（0<α≤1）、0に近いほど透明、1に近いほど不透明となります。
+   - **shape**：点の形（0～25）、お勧めはshape=21「○」
    
 shapeの詳細は以下のリンクを参照してください。
 http://www.cookbook-r.com/Graphs/Shapes_and_line_types/
@@ -109,13 +109,13 @@ print(p)
 
 ```
 
- - stat_smooth：平滑化曲線を追加する
-   - 例：p <- p + stat_smooth(method="loess", linetype="dashed", colour="red", se=FALSE)
-   - method：直線/曲線の算出方法（"loess", "glm", "lm", "gam"）
-   - linetype：線の種類（"solid", "dashed", "dotted"…）
-   - size：線の太さ
-   - colour：線の色（デフォルトは"black"）
-   - se：信頼区間を表示させるか否か（TRUE, FALSE）
+ - **stat_smooth**：平滑化曲線を追加する
+   - 例：**p <- p + stat_smooth(method="loess", linetype="dashed", colour="red", se=FALSE)**
+   - **method**：直線/曲線の算出方法（"loess", "glm", "lm", "gam"）
+   - **linetype**：線の種類（"solid", "dashed", "dotted"…）
+   - **size**：線の太さ
+   - **colour**：線の色（デフォルトは"black"）
+   - **se**：信頼区間を表示させるか否か（TRUE, FALSE）
 
 ```{r example_stat_smooth}
 p <- p + stat_smooth(method="loess", linetype="dashed", colour="red", se=FALSE)
@@ -123,11 +123,11 @@ print(p)
 
 ```
 
- - geom_abline：対角線（y=x）を追加する
-   - 例：p <- p + geom_abline(linetype="solid")
- - geom_hline：対角線（y=0）を追加する
-   - 例：p <- p + geom_hline(yintercept=0, linetype="solid")
-   - yintercept：y切片の値を指定
+ - **geom_abline**：対角線（y=x）を追加する
+   - 例：**p <- p + geom_abline(linetype="solid")**
+ - **geom_hline**：対角線（y=0）を追加する
+   - 例：**p <- p + geom_hline(yintercept=0, linetype="solid")**
+   - **yintercept**：y切片の値を指定
 
 ```{r example_geom_abline}
 p <- p + geom_abline(linetype="solid")
@@ -135,9 +135,9 @@ print(p)
 
 ```
 
- - theme：グリッドと背景を指定する
-   - 例：p <- p + theme_bw(base_size=12)
-   - theme_bw：白背景に灰色のグリッド（デフォルトはtheme_gray）
+ - **theme**：グリッドと背景を指定する
+   - 例：**p <- p + theme_bw(base_size=12)**
+   - **theme_bw**：白背景に灰色のグリッド（デフォルトはtheme_gray）
 
 ```{r example_theme_bw}
 p <- p + theme_bw(base_size=12)
@@ -146,11 +146,11 @@ print(p)
 ```
 
 ### 複数の図をまとめて表示する方法
-パッケージ"gridExtra"を使用します。
+パッケージ**gridExtra**を使用します。
 
- - 例：grid.arrange(p1, p2, p3, p4, nrow=2)
-   - nrow：分割する行数を指定
-   - ncol：分割する列数を指定
+ - 例：**grid.arrange(p1, p2, p3, p4, nrow=2)**
+   - **nrow**：分割する行数を指定
+   - **ncol**：分割する列数を指定
 
 ```{r example_gridExtra}
 grid.arrange(p1, p2, p3, p4, nrow=2)
@@ -159,13 +159,35 @@ grid.arrange(p1, p2, p3, p4, nrow=2)
 
 
 ## 演習-1
- - Data folder内のsdtab60を読み込み、Drug=1, DV>0のデータについて、以下の図を作成してください。
+ - Data folder内の**sdtab60**を読み込み、**Drug=1, DV>0**のデータについて、以下の図を作成してください。
    - 実測値（DV）と母集団予測値（PRED）のプロットを平滑化曲線と対角線（y=x）付きで作成してください。
    - CWRESと直近の投与後時間（TSLD）のプロットを平滑化曲線と直線（y=0）付きで作成してください。
    - 上記で作成した図を1行2列で並べて1つの図として表示してください。
 
+## 演習-1 解答欄
+```{r exercize-1_field, fig.height=5, fig.width=10}
+# パッケージ読み込み
+library(dplyr)
+library(tidyverse)
+library(gridExtra)
+
+# データ読み込み
+path <- "C:/Users/kashi5r4/Documents/Github/R-for-PMx/Data"
+sdtab <- read_table(paste0(path, "/sdtab60"), skip = 1)
+
+# 以下にRコードを記載してください。
+
+
+
+```
+
 ## 演習-1 解答例
 ```{r exercize-1_answer, fig.height=5, fig.width=10}
+# パッケージ読み込み
+library(dplyr)
+library(tidyverse)
+library(gridExtra)
+
 # データ読み込み
 path <- "C:/Users/kashi5r4/Documents/Github/R-for-PMx/Data"
 sdtab <- read_table(paste0(path, "/sdtab60"), skip = 1)
@@ -192,26 +214,24 @@ grid.arrange(p1, p2, ncol=2)
 ```
 
 
-## 視覚的共変量探索
+## 視覚的共変量探索 {#sec02}
 ### 共変量とは?
 薬物動態や薬力学に影響を及ぼす要因のことです。以下に共変量の例を挙げています。
 
- - 内因性の要因：体重、性別、年齢、臨床検査値、遺伝子多型など
- - 外因性の要因：併用薬、合併症、喫煙の有無など
- - 試験デザイン：製剤、食事の条件など
+ - **内因性の要因**：体重、性別、年齢、臨床検査値、遺伝子多型など
+ - **外因性の要因**：併用薬、合併症、喫煙の有無など
+ - **試験デザイン**：製剤、食事の条件など
 
 ### 共変量探索の流れ
 以下に、母集団薬物動態解析を行う際の手順の一例を示しています。
+実際に演習を行っていただく部分を太字で示しています。
 
  - 患者背景の確認
    - 要約統計量の把握
-   - 共変量候補の相関関係の確認（散布図行列）
+   - **共変量候補の相関関係の確認（散布図行列）**
  - Base model構築
- - ETA（変量効果）と共変量の相関を確認（散布図、ボックスプロット）
+ - **ETA（変量効果）と共変量の相関を確認（散布図、ボックスプロット）**
  - NONMEMで共変量探索の実行
-
-演習-2では「共変量候補の相関関係の確認（散布図行列）」、「ETA（変量効果）と共変量の相関を確認（散布図、ボックスプロット）」に取り組んでいただきます。
-
 
 ### 要約統計量の把握
 ※ 演習なしで説明のみとなります。
@@ -253,7 +273,7 @@ ggpairs(data=dat)
 
 NONMEMで共変量探索を実行する前に、Base modelのETAのEBEと共変量に相関関係があるか確認します。
 これにより、共変量探索前に組み込まれそうな共変量に当たりをつけることができます。
-また、ETAのEBEと共変量の関係から、共変量として組み込む際の式を検討できます。例えば、比例的な増加か？べき乗的な増加か？頭打ちとなっているか？
+また、ETAのEBEと共変量の関係から、共変量として組み込む際の式を検討できます。例えば、比例的な増加か？べき乗的な増加か？頭打ちとなっているか？などをグラフから読み解くことで、モデリングのヒントとなり得ます。
 
 ```{r example_ETA_vs_covariate, fig.height=5, fig.width=15}
 cotab61 <- read_table(paste0(path, "/cotab61"), skip = 1)
@@ -296,26 +316,26 @@ grid.arrange(p1, p2, p3, ncol=3)
 演習-2で必要なRコーディング技術について説明いたします。
 前セクションの内容と重複する部分もあります。
 
- - filter：列を指定し、条件式に該当する行を抜き出す
-   - 例：nmdata2 <- nmdata %>% filter(DOSE==500)
+ - **filter**：列を指定し、条件式に該当する行を抜き出す
+   - 例：**nmdata2 <- nmdata %>% filter(DOSE==500)**
    - 意味：列「DOSE」=500の行を抜き出す
- - distinct：列を指定し、重複した値を持つ行を削除する
-   - 例：nmdata2 <- nmdata %>% distinct(ID, .keep_all = TRUE)
+ - **distinct**：列を指定し、重複した値を持つ行を削除する
+   - 例：**nmdata2 <- nmdata %>% distinct(ID, .keep_all = TRUE)**
    - 意味：「ID」列を指定し、重複した値を持つ行を削除する（初出を残し、2回目以降は削除）
-   - .keep_all：指定した列以外を残すか否か（TRUE/FALSE）
- - select：指定した列を抜き出す
-   - 例：nmdata2 <- nmdata %>% select(ID, DOSE)
+   - **.keep_all**：指定した列以外を残すか否か（TRUE/FALSE）
+ - **select**：指定した列を抜き出す
+   - 例：**nmdata2 <- nmdata %>% select(ID, DOSE)**
    - 意味：「ID」「DOSE」列を抜き出す
- - mutate：新たに列を作成する（既にある列を指定すると、データが置き換わる）
-   - 例： nmdata2 <- nmdata %>% mutate(IBW = 22 * (HT/100)^2)
+ - **mutate**：新たに列を作成する（既にある列を指定すると、データが置き換わる）
+   - 例： **nmdata2 <- nmdata %>% mutate(IBW = 22 * (HT/100)^2)**
    - 意味：新たにIBW(=22*(HT/100)^2)という列を作成
-   - 例： nmdata2 <- nmdata %>% mutate(MALE = as.factor(MALE))
+   - 例： **nmdata2 <- nmdata %>% mutate(MALE = as.factor(MALE))**
    - 意味：「MALE」列の型を因子（factor）に変更する
 
 ### 散布図行列作成の前処理に必要な関数
-「GGally」パッケージを使用することで、共変量の散布図行列を簡単に作成することができます。
+**GGally**パッケージを使用することで、共変量の散布図行列を簡単に作成することができます。
 
- - 例：p <- ggpairs(data=nmdata)
+ - 例：**p <- ggpairs(data=nmdata)**
    - 非対角要素（lower）
       - 連続変数×連続変数：散布図
       - 連続変数×離散変数：ヒストグラム
@@ -342,7 +362,7 @@ ggpairs(data=dat)
 
 ```
 
- - 例：p <- ggpairs(data=nmdata, aes(alpha=0.7, colour=MALE))
+ - 例：**p <- ggpairs(data=nmdata, aes(alpha=0.7, colour=MALE))**
    - 「MALE」列で色分けして表示
 
 ```{r example_ggpairs_3}
@@ -354,7 +374,7 @@ ggpairs関数の詳細は以下のリンクを参照してください。
 https://ggobi.github.io/ggally/articles/ggpairs.html
 
 ## 演習-2
- - Data folder内のPSP4-8-748-s012.csvをnmdataとして読み込み、共変量の散布図行列作成のためのデータセットをnmdata2として作成してください。
+ - Data folder内の**PSP4-8-748-s012.csv**を**nmdata**として読み込み、共変量の散布図行列作成のためのデータセットを**nmdata2**として作成してください。
    - 被験者番号（ID）が重複した行は削除し、各IDにつき1行のデータセットとしてください。
    - 「CRCL」「AGE」「MALE」「HLTH」の列を抜き出してください。
    - 「CRCL」の値が欠損しているID（CRCL=-99）は削除してください。
@@ -362,9 +382,34 @@ https://ggobi.github.io/ggally/articles/ggpairs.html
  - データセット「nmdata2」を用いて共変量の散布図行列を作成してください。
    - 「CRCL」「AGE」「MALE」「HLTH」の散布図行列を、「HLTH」で色分けして作成してください。
 
+## 演習-2 解答欄
+```{r exercize-2_field}
+# パッケージ読み込み
+library(dplyr)
+library(tidyverse)
+library(GGally)
+library(knitr)
+
+# データ読み込み
+path <- "C:/Users/kashi5r4/Documents/Github/R-for-PMx/Data"
+nmdata <- read_csv(paste0(path, "/PSP4-8-748-s012.csv"), skip = 0)
+
+# 以下にRコードを記載してください。
+
+
+
+```
+
 ## 演習-2 解答例
 ```{r exercize-2_answer}
-# データ処理
+# パッケージ読み込み
+library(dplyr)
+library(tidyverse)
+library(GGally)
+library(knitr)
+
+# データ読み込み
+path <- "C:/Users/kashi5r4/Documents/Github/R-for-PMx/Data"
 nmdata <- read_csv(paste0(path, "/PSP4-8-748-s012.csv"), skip = 0)
 
 nmdata2 <- nmdata %>%
@@ -383,13 +428,13 @@ print(p)
 ```
 
 ## 演習-3
- - Data folder内のpatab61、catab61、cotab61、sdtab61について
-   - patab61、catab61、cotab61は被験者番号（ID）が重複した行を削除して、 patab、catab、cotabを作成してください。
-   - sdtab61はID及びDRUGが重複した行を削除して、sdtabを作成してください。
-   - patab、catab、cotab、sdtabをIDをkeyとしてマージしたnmdataを作成してください。
+ - Data folder内の**patab61**、**catab61**、**cotab61**、**sdtab61**について
+   - patab61、catab61、cotab61は被験者番号（ID）が重複した行を削除して、 **patab**、**catab**、**cotab**を作成してください。
+   - sdtab61はID及びDRUGが重複した行を削除して、**sdtab**を作成してください。
+   - patab、catab、cotab、sdtabをIDをkeyとしてマージした**nmdata**を作成してください。
 
-   - nmdataを用いてETA1とCRCLの相関プロットを作成してください。
-   - nmdataを用いてETA1とHLTHのボックスプロットを作成してください。
+   - **nmdata**を用いてETA1とCRCLの相関プロットを作成してください。
+   - **nmdata**を用いてETA1とHLTHのボックスプロットを作成してください。
 
 
 ### 演習-3に用いるデータセットの説明
@@ -398,8 +443,31 @@ print(p)
  - cotab61：共変量候補のうち、連続変数を出力したファイル
  - sdtab61：GOFプロット作成に必要な変数を出力したファイル（今回は「DRUG」列をマージするために使用）
 
+## 演習-3 解答欄
+```{r exercize-3_field, fig.height=5, fig.width=10}
+# パッケージ読み込み
+library(dplyr)
+library(tidyverse)
+
+# データ読み込み
+cotab61 <- read_table(paste0(path, "/cotab61"), skip = 1)
+catab61 <- read_table(paste0(path, "/catab61"), skip = 1)
+patab61 <- read_table(paste0(path, "/patab61"), skip = 1)
+sdtab61 <- read_table(paste0(path, "/sdtab61"), skip = 1)
+
+# 以下にRコードを記載してください。
+
+
+
+```
+
+
 ## 演習-3 解答例
 ```{r exercize-3_answer, fig.height=5, fig.width=10}
+# パッケージ読み込み
+library(dplyr)
+library(tidyverse)
+
 # データ読み込み
 cotab61 <- read_table(paste0(path, "/cotab61"), skip = 1)
 catab61 <- read_table(paste0(path, "/catab61"), skip = 1)
@@ -432,5 +500,7 @@ p2 <- p
 grid.arrange(p1, p2, ncol=2)
 
 ```
+
+本セクションの講義・演習は以上になります。お疲れさまでした。
 
 #### End of document 
