@@ -25,9 +25,9 @@ Sys.setlocale('LC_ALL','C')
 
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 
-#path <- "/cloud/project" #default
+path <- "/cloud/project" #default
 #path <- "F:/Desktop/Rpmx/R-for-PMx"               # enviroment - 1
-path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
+#path <- "C:/Users/Sasaki.Tomohiro/Desktop/R-for-PMx"  # enviroment - 2
 ```
 
 # Exploratory Data Analysis (EDA)
