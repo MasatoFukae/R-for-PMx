@@ -1,0 +1,27 @@
+---
+title: "99_Setting-up rmd file"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+install.packages("knitr")
+install.packages("tidyverse")
+install.packages("dplyr")
+install.packages("flextable")
+install.packages("png")
+install.packages("officer")
+install.packages("DT")
+install.packages("GGally")
+install.packages("gridExtra")
+
+# library(knitr)
+# library(tidyverse)
+# library(dplyr)
+# library(flextable)
+# library(png)
+# library(officer)
+#library(DT)
+Sys.setlocale('LC_ALL','C')
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
