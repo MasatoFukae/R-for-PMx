@@ -5,3 +5,4 @@ sample/.Rhistory
 .Rproj.user
 project.Rproj
 *.tmp
+.DS_Store
